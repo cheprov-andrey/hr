@@ -2,10 +2,11 @@
 
 namespace Manager;
 
+use Connection\Connection;
+use Gateway\UsersRepository;
+
 class User
 {
-    const limit = 10;
-
     /**
      * Возвращает пользователей старше заданного возраста.
      * @param int $ageFrom
@@ -13,20 +14,19 @@ class User
      */
     function getUsers(int $ageFrom): array
     {
-        $ageFrom = (int)trim($ageFrom);
-
-        return \Gateway\User::getUsers($ageFrom);
+        return UsersRepository::getUsers($ageFrom);
     }
 
     /**
      * Возвращает пользователей по списку имен.
+     * @param array $names
      * @return array
      */
-    public static function getByNames(): array
+    public static function getByNames(array $names): array
     {
         $users = [];
-        foreach ($_GET['names'] as $name) {
-            $users[] = \Gateway\User::user($name);
+        foreach ($names as $name) {
+            $users[] = UsersRepository::user($name);
         }
 
         return $users;
@@ -34,20 +34,20 @@ class User
 
     /**
      * Добавляет пользователей в базу данных.
-     * @param $users
+     * @param array $users
      * @return array
      */
-    public function users($users): array
+    public function addUsers(array $users): array
     {
         $ids = [];
-        \Gateway\User::getInstance()->beginTransaction();
+        Connection::getInstance()->beginTransaction();
         foreach ($users as $user) {
             try {
-                \Gateway\User::add($user['name'], $user['lastName'], $user['age']);
-                \Gateway\User::getInstance()->commit();
-                $ids[] = \Gateway\User::getInstance()->lastInsertId();
+                UsersRepository::add($user['name'], $user['lastName'], $user['age']);
+                Connection::getInstance()->commit();
+                $ids[] = Connection::getInstance()->lastInsertId();
             } catch (\Exception $e) {
-                \Gateway\User::getInstance()->rollBack();
+                Connection::getInstance()->rollBack();
             }
         }
 
